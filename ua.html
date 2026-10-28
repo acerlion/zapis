@@ -144,17 +144,6 @@ section { padding-block: 72px; }
 .feature .t { font: 500 12px/1 var(--mono); color: var(--sea); }
 .feature p { color: var(--muted); font-size: 15px; }
 
-/* calculator */
-.calc { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
-.calc-copy { display: grid; gap: 16px; min-width: 0; }
-.calc-box { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; display: grid; gap: 20px; min-width: 0; }
-.field { display: grid; gap: 8px; }
-.field label { font-size: 14px; font-weight: 500; display: flex; justify-content: space-between; gap: 12px; }
-.field output { font: 500 15px/1 var(--mono); color: var(--sea); font-variant-numeric: tabular-nums; }
-input[type="range"] { width: 100%; accent-color: var(--sea); }
-.result { border-top: 1px solid var(--line); padding-top: 18px; display: grid; gap: 6px; }
-.result .big { font: 700 clamp(34px, 5vw, 46px)/1 var(--display); font-variant-numeric: tabular-nums; }
-.result .vs { font-size: 14px; color: var(--muted); }
 
 /* pricing */
 .prices { display: grid; grid-template-columns: 1fr 1fr; max-width: 860px; gap: 20px; }
@@ -198,7 +187,7 @@ footer { border-top: 1px solid var(--line); }
 footer .wrap { padding-block: 24px; font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
 @media (max-width: 900px) {
-  .hero .wrap, .calc { grid-template-columns: 1fr; gap: 40px; }
+  .hero .wrap { grid-template-columns: 1fr; gap: 40px; }
   .prices { grid-template-columns: 1fr; }
   .features { grid-template-columns: 1fr 1fr; }
 }
@@ -286,36 +275,8 @@ footer .wrap { padding-block: 24px; font-size: 13px; color: var(--muted); displa
     </div>
   </section>
 
-  <section id="calc">
-    <div class="wrap calc">
-      <div class="calc-copy">
-        <span class="eyebrow" data-i="cEyebrow"></span>
-        <h2 data-i="cH"></h2>
-        <p class="lead" data-i="cP"></p>
-      </div>
-      <div class="calc-box">
-        <div class="field">
-          <label for="missed"><span data-i="cL1"></span><output id="missedOut"></output></label>
-          <input id="missed" type="range" min="1" max="20" value="5">
-        </div>
-        <div class="field">
-          <label for="check"><span data-i="cL2"></span><output id="checkOut"></output></label>
-          <input id="check" type="range" min="10" max="120" step="5" value="30">
-        </div>
-        <div class="field">
-          <label for="lost"><span data-i="cL3"></span><output id="lostOut"></output></label>
-          <input id="lost" type="range" min="10" max="90" step="10" value="40">
-        </div>
-        <div class="result">
-          <span data-i="cRes"></span>
-          <span class="big"><span id="loss">0</span> €<span style="font: 500 16px var(--body); color: var(--muted)"> <span data-i="cPer"></span></span></span>
-          <span class="vs" data-i="cVs"></span>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <section class="band" id="prices">
+  <section id="prices">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow" data-i="pEyebrow"></span>
@@ -342,7 +303,7 @@ footer .wrap { padding-block: 24px; font-size: 13px; color: var(--muted); displa
     </div>
   </section>
 
-  <section id="how">
+  <section class="band" id="how">
     <div class="wrap">
       <div class="sec-head">
         <span class="eyebrow" data-i="sEyebrow"></span>
@@ -356,7 +317,7 @@ footer .wrap { padding-block: 24px; font-size: 13px; color: var(--muted); displa
     </div>
   </section>
 
-  <section class="band" id="faq">
+  <section id="faq">
     <div class="wrap">
       <div class="sec-head"><span class="eyebrow">FAQ</span><h2 data-i="qH"></h2></div>
       <div class="faq">
@@ -368,7 +329,7 @@ footer .wrap { padding-block: 24px; font-size: 13px; color: var(--muted); displa
     </div>
   </section>
 
-  <section class="contact" id="contact">
+  <section class="contact band" id="contact">
     <div class="wrap">
       <h2 data-i="ctaH"></h2>
       <p class="lead" data-i="ctaP"></p>
@@ -426,15 +387,6 @@ const T = {
     f4t: "Возвращает клиентов", f4: "Через 3 недели бот сам предлагает клиенту записаться снова.",
     f5t: "Отзывы в Google", f5: "После визита просит оставить отзыв. Больше отзывов, выше место в Google Maps.",
     f6t: "5 языков", f6: "Болгарский, русский, украинский, английский, чешский. Бот говорит на языке клиента.",
-    cEyebrow: "Посчитайте сами",
-    cH: "Сколько стоят пропущенные сообщения",
-    cP: "Пока вы работаете, клиент пишет или звонит. Не дождался ответа и записался к другому мастеру.",
-    cL1: "Пропущенных звонков и сообщений в неделю",
-    cL2: "Средний чек, €",
-    cL3: "Сколько из них уходят к другим, %",
-    cRes: "Вы теряете примерно",
-    cPer: "в месяц",
-    cVs: "Бот стоит 10 € в месяц.",
     pEyebrow: "Цены", pH: "Понятно и без договора на год",
     pBadge: "Выгоднее · подключение −50%",
     planHalfT: "3 месяца сразу",
@@ -491,15 +443,6 @@ const T = {
     f4t: "Връща клиентите", f4: "След 3 седмици ботът сам предлага на клиента да се запише отново.",
     f5t: "Отзиви в Google", f5: "След посещението моли за отзив. Повече отзиви означава по-високо място в Google Maps.",
     f6t: "5 езика", f6: "Български, руски, украински, английски, чешки. Ботът говори на езика на клиента.",
-    cEyebrow: "Пресметнете сами",
-    cH: "Колко ви струват пропуснатите съобщения",
-    cP: "Докато работите, клиентът пише или звъни. Не получава отговор и се записва при друг майстор.",
-    cL1: "Пропуснати обаждания и съобщения на седмица",
-    cL2: "Средна сметка, €",
-    cL3: "Колко от тях отиват другаде, %",
-    cRes: "Губите приблизително",
-    cPer: "на месец",
-    cVs: "Ботът струва 10 € на месец.",
     pEyebrow: "Цени", pH: "Ясно и без договор за година",
     pBadge: "Най-изгодно · включване −50%",
     planHalfT: "3 месеца наведнъж",
@@ -556,15 +499,6 @@ const T = {
     f4t: "Повертає клієнтів", f4: "Через 3 тижні бот сам пропонує клієнту записатися знову.",
     f5t: "Відгуки в Google", f5: "Після візиту просить залишити відгук. Більше відгуків, вище місце в Google Maps.",
     f6t: "5 мов", f6: "Болгарська, російська, українська, англійська, чеська. Бот говорить мовою клієнта.",
-    cEyebrow: "Порахуйте самі",
-    cH: "Скільки коштують пропущені повідомлення",
-    cP: "Поки ви працюєте, клієнт пише чи дзвонить. Не дочекався відповіді й записався до іншого майстра.",
-    cL1: "Пропущених дзвінків і повідомлень на тиждень",
-    cL2: "Середній чек, €",
-    cL3: "Скільки з них іде до інших, %",
-    cRes: "Ви втрачаєте приблизно",
-    cPer: "на місяць",
-    cVs: "Бот коштує 10 € на місяць.",
     pEyebrow: "Ціни", pH: "Зрозуміло й без договору на рік",
     pBadge: "Найвигідніше · підключення −50%",
     planHalfT: "3 місяці одразу",
@@ -614,19 +548,8 @@ function apply(l) {
   $$(".langs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
   document.title = d.brand;
   store("lang", lang);
-  calc();
 }
 
-function calc() {
-  const m = +document.getElementById("missed").value;
-  const c = +document.getElementById("check").value;
-  const p = +document.getElementById("lost").value;
-  document.getElementById("missedOut").textContent = m;
-  document.getElementById("checkOut").textContent = c + " €";
-  document.getElementById("lostOut").textContent = p + "%";
-  const loss = Math.round((m * 4.3 * c * p) / 100 / 5) * 5;
-  document.getElementById("loss").textContent = loss.toLocaleString(lang === "uk" ? "uk-UA" : lang === "ru" ? "ru-RU" : "bg-BG");
-}
 
 const tgUrl = "https://t.me/" + CONFIG.telegram;
 const demoUrl = "https://t.me/" + CONFIG.demoBot;
@@ -638,7 +561,6 @@ $$(".js-name").forEach((el) => (el.textContent = CONFIG.name));
 $$(".js-phone-row").forEach((el) => (el.hidden = !CONFIG.phone));
 
 $$(".langs button").forEach((b) => b.addEventListener("click", () => apply(b.dataset.lang)));
-["missed", "check", "lost"].forEach((id) => document.getElementById(id).addEventListener("input", calc));
 
 document.getElementById("copyPhone").addEventListener("click", (e) => {
   const btn = e.currentTarget;
