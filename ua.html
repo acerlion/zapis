@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Онлайн-запис для клієнтів салонів і майстрів</title>
+<meta name="description" content="Telegram-бот для записи клиентов: салоны, мастера маникюра, ресниц, бровей, массажа и барберы. Настройка удалённо.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: an appointment book. Hero pairs the pitch with a live-looking booking chat;
+   time slots in mono are the recurring motif; one sea-teal accent, amber only for "free slot". */
+:root {
+  --bg: #F4F7F8;
+  --surface: #FFFFFF;
+  --ink: #0F2733;
+  --muted: #566B75;
+  --line: #D6E1E5;
+  --sea: #0B7480;
+  --sea-ink: #FFFFFF;
+  --sea-soft: #DDEFF1;
+  --amber: #C9831C;
+  --amber-soft: #FCEFD9;
+  --chat-bg: #E4ECEF;
+  --bubble: #FFFFFF;
+  --taken: #B9C7CD;
+
+  --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  --radius: 14px;
+  --wrap: 1120px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1820; --surface: #112430; --ink: #E4EEF1; --muted: #93A8B1; --line: #213C4C;
+    --sea: #45BCC6; --sea-ink: #04222A; --sea-soft: #123A42; --amber: #F0B456; --amber-soft: #3A2B14;
+    --chat-bg: #0E1E27; --bubble: #17303D; --taken: #3A5562; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B1820; --surface: #112430; --ink: #E4EEF1; --muted: #93A8B1; --line: #213C4C;
+  --sea: #45BCC6; --sea-ink: #04222A; --sea-soft: #123A42; --amber: #F0B456; --amber-soft: #3A2B14;
+  --chat-bg: #0E1E27; --bubble: #17303D; --taken: #3A5562; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 16px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+.wrap {
+  max-width: var(--wrap); margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(30px, 5vw, 54px); line-height: 1.08; font-weight: 700; }
+h2 { font-size: clamp(24px, 3.4vw, 36px); line-height: 1.15; font-weight: 700; }
+h3 { font-size: 17px; line-height: 1.3; font-weight: 500; }
+p { margin: 0; }
+.eyebrow {
+  font: 500 12px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--sea);
+}
+.lead { font-size: 18px; color: var(--muted); max-width: 34em; }
+:focus-visible { outline: 3px solid var(--sea); outline-offset: 3px; border-radius: 6px; }
+
+/* header */
+header { border-bottom: 1px solid var(--line); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; min-width: 0; }
+.brand-mark {
+  height: 34px; padding: 0 8px; border-radius: 10px; background: var(--sea); color: var(--sea-ink);
+  display: grid; place-items: center; font: 700 13px/1 var(--mono); flex: none;
+}
+.brand span:last-child { line-height: 1.25; }
+.langs { display: flex; gap: 4px; flex: none; }
+.langs button {
+  font: 500 13px/1 var(--mono); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
+  background: transparent; color: var(--muted); cursor: pointer; text-transform: uppercase;
+}
+.langs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* buttons */
+.btns { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; text-decoration: none; cursor: pointer;
+  font: 700 16px/1 var(--body); padding: 16px 22px; border-radius: 12px; border: 1.5px solid transparent;
+  transition: transform .15s ease, background .15s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: var(--sea); color: var(--sea-ink); }
+.btn-ghost { border-color: var(--ink); color: var(--ink); background: transparent; }
+.btn svg { width: 18px; height: 18px; flex: none; }
+
+/* hero */
+.hero .wrap { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 56px; align-items: center; padding-block: 64px 72px; }
+.hero-copy { display: grid; gap: 22px; min-width: 0; }
+.note { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.note b { color: var(--ink); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); flex: none; }
+
+/* chat mock */
+.phone {
+  background: var(--chat-bg); border-radius: 28px; padding: 18px; border: 1px solid var(--line);
+  display: grid; gap: 10px; max-width: 420px; width: 100%; justify-self: center; min-width: 0;
+}
+.chat-head { display: flex; align-items: center; gap: 10px; padding: 2px 4px 8px; border-bottom: 1px solid var(--line); }
+.chat-ava { width: 34px; height: 34px; border-radius: 50%; background: var(--amber-soft); display: grid; place-items: center; font-size: 17px; }
+.chat-head b { font-size: 14px; display: block; }
+.chat-head small { font-size: 12px; color: var(--sea); }
+.bubble {
+  background: var(--bubble); border-radius: 14px 14px 14px 4px; padding: 10px 12px; font-size: 14px; line-height: 1.45;
+  max-width: 92%; box-shadow: 0 1px 0 var(--line);
+}
+.bubble.me { justify-self: end; background: var(--sea); color: var(--sea-ink); border-radius: 14px 14px 4px 14px; box-shadow: none; }
+.kbd { display: grid; gap: 6px; margin-top: 8px; }
+.kbd span { display: block; text-align: center; font-size: 13px; padding: 8px; border-radius: 8px; background: var(--sea-soft); color: var(--ink); font-weight: 500; }
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+.slot {
+  font: 500 13px/1 var(--mono); text-align: center; padding: 8px 0; border-radius: 8px;
+  background: var(--amber-soft); color: var(--ink); border: 1px solid transparent;
+}
+.slot.taken { background: transparent; color: var(--taken); text-decoration: line-through; border-color: var(--line); }
+.slot.pick { background: var(--amber); color: #1B1205; }
+.notify {
+  margin-top: 6px; background: var(--surface); border: 1px dashed var(--sea); border-radius: 12px; padding: 10px 12px;
+  display: grid; gap: 2px; font-size: 13px;
+}
+.notify .eyebrow { font-size: 10px; }
+.notify b { font-size: 14px; }
+
+/* sections */
+section { padding-block: 72px; }
+.band { background: var(--surface); border-block: 1px solid var(--line); }
+.sec-head { display: grid; gap: 14px; margin-bottom: 40px; max-width: 760px; }
+
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px 40px; }
+.feature { display: grid; gap: 8px; align-content: start; min-width: 0; padding-top: 18px; border-top: 2px solid var(--ink); }
+.feature .t { font: 500 12px/1 var(--mono); color: var(--sea); }
+.feature p { color: var(--muted); font-size: 15px; }
+
+/* calculator */
+.calc { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+.calc-copy { display: grid; gap: 16px; min-width: 0; }
+.calc-box { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; display: grid; gap: 20px; min-width: 0; }
+.field { display: grid; gap: 8px; }
+.field label { font-size: 14px; font-weight: 500; display: flex; justify-content: space-between; gap: 12px; }
+.field output { font: 500 15px/1 var(--mono); color: var(--sea); font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--sea); }
+.result { border-top: 1px solid var(--line); padding-top: 18px; display: grid; gap: 6px; }
+.result .big { font: 700 clamp(34px, 5vw, 46px)/1 var(--display); font-variant-numeric: tabular-nums; }
+.result .vs { font-size: 14px; color: var(--muted); }
+
+/* pricing */
+.prices { display: grid; grid-template-columns: 1fr 1fr; max-width: 860px; gap: 20px; }
+.price { border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; display: grid; gap: 14px; align-content: start; background: var(--surface); min-width: 0; }
+.price.main { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.price.main p { color: color-mix(in srgb, var(--bg) 75%, transparent); }
+.price .amount { font: 700 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+.price .amount small { font: 500 15px/1 var(--body); opacity: .75; }
+.price p { color: var(--muted); font-size: 15px; }
+.price .save { font-weight: 700; font-size: 16px; color: var(--sea); }
+.price.main .save { color: var(--amber); }
+.price-foot { max-width: 860px; display: grid; gap: 16px; margin-top: 20px; }
+.included { color: var(--muted); font-size: 15px; }
+.badge { justify-self: start; font: 500 12px/1 var(--mono); padding: 7px 10px; border-radius: 99px; background: var(--amber); color: #1B1205; }
+
+/* steps */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; counter-reset: s; }
+.step { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.step::before {
+  counter-increment: s; content: counter(s); font: 700 15px/1 var(--mono); width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center; border: 1.5px solid var(--sea); color: var(--sea);
+}
+.step p { color: var(--muted); font-size: 15px; }
+
+/* faq */
+.faq { display: grid; gap: 0; max-width: 820px; }
+details { border-bottom: 1px solid var(--line); padding-block: 18px; }
+summary { cursor: pointer; font-weight: 700; font-size: 17px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font: 500 20px/1 var(--mono); color: var(--sea); flex: none; }
+details[open] summary::after { content: "−"; }
+details p { color: var(--muted); margin-top: 10px; max-width: 62ch; }
+
+/* contact */
+.contact .wrap { display: grid; gap: 24px; justify-items: start; }
+.contact-card { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; font-size: 15px; color: var(--muted); }
+.contact-card b { color: var(--ink); font: 500 16px/1 var(--mono); user-select: all; }
+.contact-card b.contact-name { font: 700 18px/1 var(--body); user-select: auto; }
+.copy { font: 500 13px/1 var(--body); border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+footer { border-top: 1px solid var(--line); }
+footer .wrap { padding-block: 24px; font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .hero .wrap, .calc { grid-template-columns: 1fr; gap: 40px; }
+  .prices { grid-template-columns: 1fr; }
+  .features { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .hero .wrap { padding-block: 40px 48px; }
+  section { padding-block: 52px; }
+  .features, .steps { grid-template-columns: 1fr; }
+  .brand { font-size: 14px; }
+  .btn { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#top"><span data-i="brand"></span></a>
+    <div class="langs" role="group" aria-label="Language">
+      <button type="button" data-lang="ru">RU</button>
+      <button type="button" data-lang="uk">UA</button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="eyebrow" data-i="eyebrow"></span>
+        <h1 data-i="h1"></h1>
+        <p class="lead" data-i="lead"></p>
+        <div class="btns">
+          <a class="btn btn-primary js-demo" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.3 18.7 19.5c-.2 1.1-.9 1.4-1.8.9l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9.1-8.2c.4-.4-.1-.6-.6-.2L6.3 13.3l-4.8-1.5c-1-.3-1.1-1 .2-1.5L20.5 3c.9-.3 1.6.2 1.4 1.3z"/></svg>
+            <span data-i="btnDemo"></span>
+          </a>
+          <a class="btn btn-ghost js-tg" target="_blank" rel="noopener"><span data-i="btnContact"></span></a>
+        </div>
+        <p class="note"><span class="dot"></span><span data-i="note"></span></p>
+      </div>
+
+      <div class="phone" aria-label="Пример записи в боте">
+        <div class="chat-head">
+          <div class="chat-ava">💅</div>
+          <div><b>Nail Studio Anna</b><small data-i="online"></small></div>
+        </div>
+        <div class="bubble">
+          <span data-i="mService"></span>
+          <div class="kbd"><span data-i="mSvc1"></span><span data-i="mSvc2"></span></div>
+        </div>
+        <div class="bubble me" data-i="mSvc1"></div>
+        <div class="bubble">
+          <span data-i="mDay"></span>
+          <div class="slots">
+            <span class="slot taken">10:00</span><span class="slot">11:30</span><span class="slot pick">13:00</span><span class="slot taken">14:30</span>
+            <span class="slot">16:00</span><span class="slot taken">17:30</span><span class="slot">19:00</span><span class="slot taken">20:30</span>
+          </div>
+        </div>
+        <div class="bubble" data-i="mDone"></div>
+        <div class="notify">
+          <span class="eyebrow" data-i="mToMaster"></span>
+          <b data-i="mNotifyTitle"></b>
+          <span data-i="mNotify"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="band" id="features">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow" data-i="fEyebrow"></span>
+        <h2 data-i="fH"></h2>
+      </div>
+      <div class="features">
+        <div class="feature"><span class="t">24/7</span><h3 data-i="f1t"></h3><p data-i="f1"></p></div>
+        <div class="feature"><span class="t" data-i="f2tag"></span><h3 data-i="f2t"></h3><p data-i="f2"></p></div>
+        <div class="feature"><span class="t">09:00 → 20:00</span><h3 data-i="f3t"></h3><p data-i="f3"></p></div>
+        <div class="feature"><span class="t" data-i="f4tag"></span><h3 data-i="f4t"></h3><p data-i="f4"></p></div>
+        <div class="feature"><span class="t">★★★★★</span><h3 data-i="f5t"></h3><p data-i="f5"></p></div>
+        <div class="feature"><span class="t">BG · RU · UA · EN · CZ</span><h3 data-i="f6t"></h3><p data-i="f6"></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="calc">
+    <div class="wrap calc">
+      <div class="calc-copy">
+        <span class="eyebrow" data-i="cEyebrow"></span>
+        <h2 data-i="cH"></h2>
+        <p class="lead" data-i="cP"></p>
+      </div>
+      <div class="calc-box">
+        <div class="field">
+          <label for="missed"><span data-i="cL1"></span><output id="missedOut"></output></label>
+          <input id="missed" type="range" min="1" max="20" value="5">
+        </div>
+        <div class="field">
+          <label for="check"><span data-i="cL2"></span><output id="checkOut"></output></label>
+          <input id="check" type="range" min="10" max="120" step="5" value="30">
+        </div>
+        <div class="field">
+          <label for="lost"><span data-i="cL3"></span><output id="lostOut"></output></label>
+          <input id="lost" type="range" min="10" max="90" step="10" value="40">
+        </div>
+        <div class="result">
+          <span data-i="cRes"></span>
+          <span class="big"><span id="loss">0</span> €<span style="font: 500 16px var(--body); color: var(--muted)"> <span data-i="cPer"></span></span></span>
+          <span class="vs" data-i="cVs"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="prices">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow" data-i="pEyebrow"></span>
+        <h2 data-i="pH"></h2>
+      </div>
+      <div class="prices">
+        <div class="price main">
+          <span class="badge" data-i="pBadge"></span>
+          <h3 data-i="planHalfT"></h3>
+          <div class="amount">30 € <small data-i="planHalfPer"></small></div>
+          <p class="save" data-i="planHalfSave"></p>
+          <p data-i="planHalf"></p>
+        </div>
+        <div class="price">
+          <h3 data-i="planMonthT"></h3>
+          <div class="amount">10 € <small data-i="planMonthPer"></small></div>
+          <p class="save" data-i="planMonthSetup"></p>
+          <p data-i="planMonth"></p>
+        </div>
+      </div>
+      <div class="price-foot">
+        <p class="included" data-i="pIncluded"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow" data-i="sEyebrow"></span>
+        <h2 data-i="sH"></h2>
+      </div>
+      <div class="steps">
+        <div class="step"><h3 data-i="s1t"></h3><p data-i="s1"></p></div>
+        <div class="step"><h3 data-i="s2t"></h3><p data-i="s2"></p></div>
+        <div class="step"><h3 data-i="s3t"></h3><p data-i="s3"></p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="faq">
+    <div class="wrap">
+      <div class="sec-head"><span class="eyebrow">FAQ</span><h2 data-i="qH"></h2></div>
+      <div class="faq">
+        <details><summary data-i="q1"></summary><p data-i="a1"></p></details>
+        <details><summary data-i="q2"></summary><p data-i="a2"></p></details>
+        <details><summary data-i="q3"></summary><p data-i="a3"></p></details>
+        <details><summary data-i="q4"></summary><p data-i="a4"></p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact" id="contact">
+    <div class="wrap">
+      <h2 data-i="ctaH"></h2>
+      <p class="lead" data-i="ctaP"></p>
+      <div class="btns">
+        <a class="btn btn-primary js-tg" target="_blank" rel="noopener"><span data-i="btnTg"></span></a>
+        <a class="btn btn-ghost js-demo" target="_blank" rel="noopener"><span data-i="btnDemo"></span></a>
+      </div>
+      <div class="contact-card">
+        <b class="js-name contact-name"></b>
+        <span>Telegram: <b class="js-tg-text"></b></span>
+        <span class="js-phone-row">Viber / <span data-i="phone"></span>: <b class="js-phone"></b></span>
+        <button class="copy js-phone-row" type="button" id="copyPhone" data-i="copy"></button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap"><span data-i="foot"></span></div>
+</footer>
+
+<script>
+// ===== Ваши данные: замените и всё обновится на странице =====
+const CONFIG = {
+  name: "Михаил",
+  telegram: "online_zapis_bg",      // без @
+  phone: "+359 879 387 930",                      // Viber / телефон; пусто = строка с телефоном скрыта
+  demoBot: "demo_nailstudio_bot",   // демо-бот, должен быть запущен 24/7
+};
+
+const T = {
+  ru: {
+    brand: "Онлайн-запись для клиентов салонов и мастеров",
+    eyebrow: "Telegram-бот для записи · настройка удалённо",
+    h1: "Клиенты записываются сами. Даже когда вы с клиентом.",
+    lead: "Бот показывает свободное время, записывает клиента, напоминает ему о визите и присылает вам уведомление. Без звонков посреди процедуры и без переписки на пять сообщений.",
+    btnDemo: "Попробовать демо-бота",
+    btnContact: "Обсудить ваш салон",
+    note: "<b>Скидка 50% на подключение</b> при оплате за 3 месяца. Настройка за 1–2 дня.",
+    online: "бот · онлайн",
+    mService: "Выберите услугу:",
+    mSvc1: "Маникюр + покрытие · 60 мин · 25 €",
+    mSvc2: "Наращивание ресниц · 120 мин · 45 €",
+    mDay: "Четверг, 30 октября. Свободно:",
+    mDone: "✅ Готово! Ждём вас в четверг в 13:00. Напомню накануне и за 2 часа.",
+    mToMaster: "уведомление мастеру",
+    mNotifyTitle: "Новая запись",
+    mNotify: "Мария · маникюр + покрытие · чт 13:00",
+    fEyebrow: "Что умеет бот",
+    fH: "Администратор, который не устаёт и не забывает",
+    f1t: "Запись круглосуточно", f1: "Клиент выбирает услугу, мастера и время. Бот показывает только окна, куда процедура реально помещается.",
+    f2tag: "−24 ч · −2 ч", f4tag: "+21 день",
+    f2t: "Напоминания", f2: "Накануне и за 2 часа до визита. Меньше клиентов, которые просто не пришли.",
+    f3t: "Кабинет мастера", f3: "Расписание на день и неделю, выручка, закрыть время на отпуск или личные дела.",
+    f4t: "Возвращает клиентов", f4: "Через 3 недели бот сам предлагает клиенту записаться снова.",
+    f5t: "Отзывы в Google", f5: "После визита просит оставить отзыв. Больше отзывов, выше место в Google Maps.",
+    f6t: "5 языков", f6: "Болгарский, русский, украинский, английский, чешский. Бот говорит на языке клиента.",
+    cEyebrow: "Посчитайте сами",
+    cH: "Сколько стоят пропущенные сообщения",
+    cP: "Пока вы работаете, клиент пишет или звонит. Не дождался ответа и записался к другому мастеру.",
+    cL1: "Пропущенных звонков и сообщений в неделю",
+    cL2: "Средний чек, €",
+    cL3: "Сколько из них уходят к другим, %",
+    cRes: "Вы теряете примерно",
+    cPer: "в месяц",
+    cVs: "Бот стоит 10 € в месяц.",
+    pEyebrow: "Цены", pH: "Понятно и без договора на год",
+    pBadge: "Выгоднее · подключение −50%",
+    planHalfT: "3 месяца сразу",
+    planHalfPer: "за 3 месяца",
+    planHalfSave: "Подключение от 25 € вместо 50 €",
+    planHalf: "Те же 10 € в месяц, а подключение в два раза дешевле.",
+    planMonthT: "Помесячно",
+    planMonthPer: "/ мес",
+    planMonthSetup: "+ подключение от 50 €",
+    planMonth: "Цена подключения зависит от ваших пожеланий: сколько мастеров и услуг, что нужно добавить.",
+    pIncluded: "В обе цены входит: настройка под ваши услуги, цены и мастеров, сервер, обновления и поддержка в Telegram.",
+    sEyebrow: "Как начать", sH: "Через 2 дня у вас уже работает запись",
+    s1t: "Пишете мне в Telegram или Viber", s1: "Рассказываете про услуги, цены и график. Это 10 минут.",
+    s2t: "Бесплатное демо с вашими услугами", s2: "За один день пришлю бота с вашими услугами и ценами. Попробуйте его как клиент и как мастер.",
+    s3t: "Оплачиваете и запускаем", s3: "Ставим ссылку в Instagram и на визитку, и клиенты начинают записываться сами.",
+    qH: "Частые вопросы",
+    q1: "Мои клиенты пишут в Viber, а не в Telegram",
+    a1: "Телефон и Viber остаются как были. Бот добавляет ещё один способ записаться без звонка, например ночью, когда звонить неудобно. Ссылка на бота открывается с любого телефона.",
+    q2: "Нужно что-то устанавливать?",
+    a2: "Нет. Всё работает в Telegram на вашем телефоне. Расписание и уведомления приходят туда же.",
+    q3: "Я записываю часть клиентов по телефону. Не будет накладок?",
+    a3: "Нет. Запись по телефону вы отмечаете в кабинете мастера в два нажатия, и это время для бота становится занятым.",
+    q4: "А если я захочу отказаться?",
+    a4: "Оплата помесячно, без договора на год. Отказаться можно в любой момент, данные клиентов остаются у вас.",
+    ctaH: "Покажу, как бот будет выглядеть для вашего салона",
+    ctaP: "Напишите название салона и список услуг. Пришлю демо с вашими ценами за один день, бесплатно.",
+    btnTg: "Написать в Telegram",
+    phone: "телефон", copy: "Скопировать номер", copied: "Скопировано",
+    foot: "Запись для салонов и частных мастеров",
+  },
+  bg: {
+    brand: "Онлайн записване за клиенти на салони и майстори",
+    eyebrow: "Telegram бот за записване · настройка онлайн",
+    h1: "Клиентите се записват сами. Дори докато работите.",
+    lead: "Ботът показва свободните часове, записва клиента, напомня му за посещението и ви изпраща известие. Без обаждания по време на процедура и без дълги чатове.",
+    btnDemo: "Пробвайте демо бота",
+    btnContact: "Да поговорим за вашия салон",
+    note: "<b>50% отстъпка за включването</b> при плащане за 3 месеца. Настройка за 1–2 дни.",
+    online: "бот · онлайн",
+    mService: "Изберете услуга:",
+    mSvc1: "Маникюр с гел лак · 60 мин · 25 €",
+    mSvc2: "Удължаване на мигли · 120 мин · 45 €",
+    mDay: "Четвъртък, 30 октомври. Свободни часове:",
+    mDone: "✅ Готово! Очакваме ви в четвъртък в 13:00. Ще ви напомня предния ден и 2 часа преди това.",
+    mToMaster: "известие за майстора",
+    mNotifyTitle: "Нова резервация",
+    mNotify: "Мария · маникюр с гел лак · чт 13:00",
+    fEyebrow: "Какво може ботът",
+    fH: "Администратор, който не се уморява и не забравя",
+    f1t: "Записване 24/7", f1: "Клиентът избира услуга, майстор и час. Ботът показва само часовете, в които процедурата наистина се побира.",
+    f2tag: "−24 ч · −2 ч", f4tag: "+21 дни",
+    f2t: "Напомняния", f2: "Предния ден и 2 часа преди посещението. По-малко клиенти, които просто не идват.",
+    f3t: "Кабинет на майстора", f3: "График за деня и седмицата, оборот, блокиране на часове за отпуск или лични ангажименти.",
+    f4t: "Връща клиентите", f4: "След 3 седмици ботът сам предлага на клиента да се запише отново.",
+    f5t: "Отзиви в Google", f5: "След посещението моли за отзив. Повече отзиви означава по-високо място в Google Maps.",
+    f6t: "5 езика", f6: "Български, руски, украински, английски, чешки. Ботът говори на езика на клиента.",
+    cEyebrow: "Пресметнете сами",
+    cH: "Колко ви струват пропуснатите съобщения",
+    cP: "Докато работите, клиентът пише или звъни. Не получава отговор и се записва при друг майстор.",
+    cL1: "Пропуснати обаждания и съобщения на седмица",
+    cL2: "Средна сметка, €",
+    cL3: "Колко от тях отиват другаде, %",
+    cRes: "Губите приблизително",
+    cPer: "на месец",
+    cVs: "Ботът струва 10 € на месец.",
+    pEyebrow: "Цени", pH: "Ясно и без договор за година",
+    pBadge: "Най-изгодно · включване −50%",
+    planHalfT: "3 месеца наведнъж",
+    planHalfPer: "за 3 месеца",
+    planHalfSave: "Включване от 25 € вместо 50 €",
+    planHalf: "Същите 10 € на месец, а включването е наполовина по-евтино.",
+    planMonthT: "Месечно",
+    planMonthPer: "/ месец",
+    planMonthSetup: "+ включване от 50 €",
+    planMonth: "Цената на включването зависи от вашите желания: колко майстори и услуги имате, какво искате да добавим.",
+    pIncluded: "И в двете цени влизат: настройка за вашите услуги, цени и майстори, сървър, обновявания и поддръжка в Telegram.",
+    sEyebrow: "Как започваме", sH: "След 2 дни записването вече работи",
+    s1t: "Пишете ми в Telegram или Viber", s1: "Разказвате за услугите, цените и графика. Това са 10 минути.",
+    s2t: "Безплатно демо с вашите услуги", s2: "За един ден ще ви изпратя бот с вашите услуги и цени. Пробвайте го като клиент и като майстор.",
+    s3t: "Плащате и стартираме", s3: "Слагаме линка в Instagram и на визитката и клиентите започват да се записват сами.",
+    qH: "Често задавани въпроси",
+    q1: "Моите клиенти пишат във Viber, не в Telegram",
+    a1: "Телефонът и Viber си остават. Ботът добавя още един начин за записване без обаждане, например вечер, когато е неудобно да се звъни. Линкът към бота се отваря от всеки телефон.",
+    q2: "Трябва ли да инсталирам нещо?",
+    a2: "Не. Всичко работи в Telegram на вашия телефон. Графикът и известията идват там.",
+    q3: "Част от клиентите записвам по телефона. Няма ли да се застъпват часовете?",
+    a3: "Не. Записа по телефона отбелязвате в кабинета на майстора с две натискания и този час става зает за бота.",
+    q4: "Ами ако реша да се откажа?",
+    a4: "Плащането е месечно, без договор за година. Можете да се откажете по всяко време, данните на клиентите остават при вас.",
+    ctaH: "Ще ви покажа как ще изглежда ботът за вашия салон",
+    ctaP: "Изпратете ми името на салона и списъка с услуги. Ще ви направя демо с вашите цени за един ден, безплатно.",
+    btnTg: "Пишете в Telegram",
+    phone: "телефон", copy: "Копирай номера", copied: "Копирано",
+    foot: "Записване за салони и майстори",
+  },
+  uk: {
+    brand: "Онлайн-запис для клієнтів салонів і майстрів",
+    eyebrow: "Telegram-бот для запису · налаштування віддалено",
+    h1: "Клієнти записуються самі. Навіть коли ви з клієнтом.",
+    lead: "Бот показує вільний час, записує клієнта, нагадує йому про візит і надсилає вам сповіщення. Без дзвінків посеред процедури й без листування на п'ять повідомлень.",
+    btnDemo: "Спробувати демо-бота",
+    btnContact: "Обговорити ваш салон",
+    note: "<b>Знижка 50% на підключення</b> при оплаті за 3 місяці. Налаштування за 1–2 дні.",
+    online: "бот · онлайн",
+    mService: "Оберіть послугу:",
+    mSvc1: "Манікюр + покриття · 60 хв · 25 €",
+    mSvc2: "Нарощування вій · 120 хв · 45 €",
+    mDay: "Четвер, 30 жовтня. Вільно:",
+    mDone: "✅ Готово! Чекаємо вас у четвер о 13:00. Нагадаю напередодні й за 2 години.",
+    mToMaster: "сповіщення майстру",
+    mNotifyTitle: "Новий запис",
+    mNotify: "Марія · манікюр + покриття · чт 13:00",
+    fEyebrow: "Що вміє бот",
+    fH: "Адміністратор, який не втомлюється й не забуває",
+    f1t: "Запис цілодобово", f1: "Клієнт обирає послугу, майстра й час. Бот показує лише вікна, куди процедура справді вміщається.",
+    f2tag: "−24 год · −2 год", f4tag: "+21 день",
+    f2t: "Нагадування", f2: "Напередодні й за 2 години до візиту. Менше клієнтів, які просто не прийшли.",
+    f3t: "Кабінет майстра", f3: "Розклад на день і тиждень, виручка, закрити час на відпустку чи особисті справи.",
+    f4t: "Повертає клієнтів", f4: "Через 3 тижні бот сам пропонує клієнту записатися знову.",
+    f5t: "Відгуки в Google", f5: "Після візиту просить залишити відгук. Більше відгуків, вище місце в Google Maps.",
+    f6t: "5 мов", f6: "Болгарська, російська, українська, англійська, чеська. Бот говорить мовою клієнта.",
+    cEyebrow: "Порахуйте самі",
+    cH: "Скільки коштують пропущені повідомлення",
+    cP: "Поки ви працюєте, клієнт пише чи дзвонить. Не дочекався відповіді й записався до іншого майстра.",
+    cL1: "Пропущених дзвінків і повідомлень на тиждень",
+    cL2: "Середній чек, €",
+    cL3: "Скільки з них іде до інших, %",
+    cRes: "Ви втрачаєте приблизно",
+    cPer: "на місяць",
+    cVs: "Бот коштує 10 € на місяць.",
+    pEyebrow: "Ціни", pH: "Зрозуміло й без договору на рік",
+    pBadge: "Найвигідніше · підключення −50%",
+    planHalfT: "3 місяці одразу",
+    planHalfPer: "за 3 місяці",
+    planHalfSave: "Підключення від 25 € замість 50 €",
+    planHalf: "Ті самі 10 € на місяць, а підключення вдвічі дешевше.",
+    planMonthT: "Щомісяця",
+    planMonthPer: "/ міс",
+    planMonthSetup: "+ підключення від 50 €",
+    planMonth: "Ціна підключення залежить від ваших побажань: скільки майстрів і послуг, що потрібно додати.",
+    pIncluded: "В обидві ціни входить: налаштування під ваші послуги, ціни й майстрів, сервер, оновлення та підтримка в Telegram.",
+    sEyebrow: "Як почати", sH: "Через 2 дні запис уже працює",
+    s1t: "Пишете мені в Telegram чи Viber", s1: "Розповідаєте про послуги, ціни й графік. Це 10 хвилин.",
+    s2t: "Безкоштовне демо з вашими послугами", s2: "За один день надішлю бота з вашими послугами й цінами. Спробуйте його як клієнт і як майстер.",
+    s3t: "Оплачуєте й запускаємо", s3: "Ставимо посилання в Instagram і на візитку, і клієнти починають записуватися самі.",
+    qH: "Часті запитання",
+    q1: "Мої клієнти пишуть у Viber, а не в Telegram",
+    a1: "Телефон і Viber залишаються як були. Бот додає ще один спосіб записатися без дзвінка, наприклад увечері, коли дзвонити незручно. Посилання на бота відкривається з будь-якого телефона.",
+    q2: "Треба щось встановлювати?",
+    a2: "Ні. Усе працює в Telegram на вашому телефоні. Розклад і сповіщення приходять туди ж.",
+    q3: "Частину клієнтів я записую телефоном. Не буде накладок?",
+    a3: "Ні. Запис телефоном ви позначаєте в кабінеті майстра двома натисканнями, і цей час для бота стає зайнятим.",
+    q4: "А якщо я захочу відмовитися?",
+    a4: "Оплата щомісяця, без договору на рік. Відмовитися можна будь-коли, дані клієнтів залишаються у вас.",
+    ctaH: "Покажу, який вигляд матиме бот для вашого салону",
+    ctaP: "Напишіть назву салону й список послуг. Надішлю демо з вашими цінами за один день, безкоштовно.",
+    btnTg: "Написати в Telegram",
+    phone: "телефон", copy: "Скопіювати номер", copied: "Скопійовано",
+    foot: "Запис для салонів і приватних майстрів",
+  },
+};
+
+const $$ = (s) => document.querySelectorAll(s);
+let lang = "bg";
+
+function store(k, v) { try { v === undefined ? (v = localStorage.getItem(k)) : localStorage.setItem(k, v); } catch (e) { v = null; } return v; }
+
+function apply(l) {
+  lang = T[l] ? l : "bg";
+  const d = T[lang];
+  document.documentElement.lang = lang;
+  $$("[data-i]").forEach((el) => {
+    const v = d[el.dataset.i];
+    if (v === undefined) return;
+    el.innerHTML = v;
+  });
+  $$(".langs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  document.title = d.brand;
+  store("lang", lang);
+  calc();
+}
+
+function calc() {
+  const m = +document.getElementById("missed").value;
+  const c = +document.getElementById("check").value;
+  const p = +document.getElementById("lost").value;
+  document.getElementById("missedOut").textContent = m;
+  document.getElementById("checkOut").textContent = c + " €";
+  document.getElementById("lostOut").textContent = p + "%";
+  const loss = Math.round((m * 4.3 * c * p) / 100 / 5) * 5;
+  document.getElementById("loss").textContent = loss.toLocaleString(lang === "uk" ? "uk-UA" : lang === "ru" ? "ru-RU" : "bg-BG");
+}
+
+const tgUrl = "https://t.me/" + CONFIG.telegram;
+const demoUrl = "https://t.me/" + CONFIG.demoBot;
+$$(".js-tg").forEach((a) => (a.href = tgUrl));
+$$(".js-demo").forEach((a) => (a.href = demoUrl));
+$$(".js-tg-text").forEach((el) => (el.textContent = "@" + CONFIG.telegram));
+$$(".js-phone").forEach((el) => (el.textContent = CONFIG.phone));
+$$(".js-name").forEach((el) => (el.textContent = CONFIG.name));
+$$(".js-phone-row").forEach((el) => (el.hidden = !CONFIG.phone));
+
+$$(".langs button").forEach((b) => b.addEventListener("click", () => apply(b.dataset.lang)));
+["missed", "check", "lost"].forEach((id) => document.getElementById(id).addEventListener("input", calc));
+
+document.getElementById("copyPhone").addEventListener("click", (e) => {
+  const btn = e.currentTarget;
+  const done = () => { btn.textContent = T[lang].copied; setTimeout(() => (btn.textContent = T[lang].copy), 1600); };
+  Promise.resolve()
+    .then(() => navigator.clipboard.writeText(CONFIG.phone))
+    .then(done)
+    .catch(() => {
+      const r = document.createRange();
+      r.selectNodeContents(document.querySelector(".js-phone"));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    });
+});
+
+// Язык: из ссылки (#bg, #ru, #uk), затем сохранённый, затем язык браузера
+const fromHash = location.hash.slice(1);
+const fromNav = (navigator.language || "bg").slice(0, 2);
+apply(T[fromHash] && fromHash !== "bg" ? fromHash : "uk");
+</script>
+
+</body>
+</html>
